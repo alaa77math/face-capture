@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>نظام التقاط بصمة الوجه المباشر</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; background-color: #f4f7f6; padding: 20px; color: #333; }
+    .container { max-width: 450px; margin: 0 auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+    video { border: 3px solid #28a745; border-radius: 8px; width: 100%; background: #000; transform: scaleX(-1); }
+    .btn { padding: 12px 24px; font-size: 16px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 15px; }
+    .btn-capture { background-color: #dc3545; }
+    #status { margin-top: 20px; font-weight: bold; color: #0066cc; word-break: break-all; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h2>بث الكاميرا الحي المستقل</h2>
+    <p>بث مباشر آمن ومستقل لحفظ بصمة الوجه في السيرفر</p>
+    
+    <video id="video" autoplay playsinline></video>
+    <button class="btn btn-capture" id="snapBtn">إلتقاط وإرسال الصورة</button>
+    
+    <canvas id="canvas" width="400" height="300" style="display:none;"></canvas>
+    <div id="status">جاري تشغيل الكاميرا...</div>
+  </div>
+
+  <script>
+    // ضع رابط تطبيق ويب Google Apps Script الخاص بك هنا بدلاً من العبارة أدناه:
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxj0zzGomSIstGOPutIvAgU7RU0hjycv62xlthcQKYC4JcaKq_4EjdhidopoLeNooV8cw/exec"; 
+
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const snapBtn = document.getElementById('snapBtn');
+    const statusDiv = document.getElementById('status');
+    let streamInstance = null;
+
+    // تشغيل الكاميرا بحرية كاملة لأن الموقع يعمل على استضافة مستقلة خارج إطار جوجل المحظور
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+      .then(stream => {
+        streamInstance = stream;
+        video.srcObject = stream;
+        statusDiv.innerHTML = "الكاميرا تعمل بنجاح. اضبط وجهك ثم اضغط على التقاط وإرسال.";
+      })
+      .catch(err => {
+        statusDiv.innerHTML = "خطأ: تعذر الوصول للكاميرا. تأكد من منح الموقع صلاحية الوصول.";
+        console.error(err);
+      });
+
+    // التقاط وإرسال الصورة للسيرفر عبر طلب HTTP POST مباشر
+    snapBtn.addEventListener('click', () => {
+      if (!streamInstance) return;
+      
+      statusDiv.innerHTML = "جاري التقاط ومعالجة اللقطة...";
+      const context = canvas.getContext('2d');
+      
+      // تطبيق تأثير المرآة لحفظ الصورة بشكل صحيح
+      context.translate(canvas.width, 0);
+      context.scale(-1, 1);
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      
+      const dataUrl = canvas.toDataURL('image/png');
+      statusDiv.innerHTML = "جاري رفع الصورة المشفرة إلى Google Drive...";
+
+      // إرسال الصورة إلى دالة doPost الخاصة بـ Apps Script
+      fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors", // لتجنب قيود الحماية أثناء الإرسال المتبادل للبيانات
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: dataUrl })
+      })
+      .then(() => {
+        statusDiv.innerHTML = "<span style='color:green;'>تمت العملية! تم إرسال اللقطة بنجاح، وستجدها الآن داخل حساب Google Drive الخاص بك.</span>";
+        // إيقاف الكاميرا
+        streamInstance.getTracks().forEach(track => track.stop());
+      })
+      .catch(err => {
+        statusDiv.innerHTML = "حدث خطأ أثناء الإرسال: " + err.message;
+        console.error(err);
+      });
+    });
+  </script>
+</body>
+</html>
