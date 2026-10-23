@@ -3,40 +3,51 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>نظام التقاط وبث بصمة الوجه</title>
+  <title>نظام بصمة الوجه بالذكاء الاصطناعي</title>
+  <!-- استدعاء مكتبة face-api.js للتعرف على الوجوه من خادم سحابي سريع -->
+  <script defer src="https://jsdelivr.net"></script>
   <style>
     body { font-family: Arial, sans-serif; text-align: center; background-color: #f4f7f6; padding: 20px; color: #333; }
     .container { max-width: 450px; margin: 0 auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
     .input-group { margin-bottom: 15px; text-align: right; }
     .input-group label { display: block; margin-bottom: 5px; font-weight: bold; }
     .input-field { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; }
-    video { border: 3px solid #007bff; border-radius: 8px; width: 100%; background: #000; transform: scaleX(-1); margin-top: 10px; }
-    .btn { padding: 12px 24px; font-size: 16px; background-color: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 15px; }
+    
+    /* منطقة الكاميرا وتحتوي على الفيديو وطبقة الرسم فوقه */
+    .camera-container { position: relative; width: 100%; max-width: 400px; margin: 15px auto 0 auto; }
+    video { border: 3px solid #ccc; border-radius: 8px; width: 100%; background: #000; transform: scaleX(-1); }
+    canvas.overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: scaleX(-1); pointer-events: none; }
+    
+    .btn { padding: 12px 24px; font-size: 16px; background-color: #cccccc; color: #666; border: none; border-radius: 5px; cursor: not-allowed; font-weight: bold; width: 100%; margin-top: 15px; transition: all 0.3s; }
+    .btn.active { background-color: #28a745; color: white; cursor: pointer; }
+    #status { margin-top: 15px; font-weight: bold; color: #cc3300; }
     .result-box { margin-top: 25px; padding-top: 20px; border-top: 2px dashed #ccc; display: none; }
     #resultImage { border: 3px solid #28a745; border-radius: 8px; width: 100%; max-width: 320px; margin-top: 10px; }
-    #status { margin-top: 15px; font-weight: bold; color: #0066cc; }
   </style>
 </head>
 <body>
 
   <div class="container">
-    <h2>نظام التقاط بصمة الوجه الذكي</h2>
+    <h2>نظام لقطة الوجه بالذكاء الاصطناعي</h2>
     
-    <!-- حقل إدخال الاسم المضاف الجديد -->
     <div class="input-group">
       <label for="userName">الاسم الكامل للمستخدم:</label>
-      <input type="text" id="userName" class="input-field" placeholder="اكتب الاسم هنا قبل الالتقاط...">
+      <input type="text" id="userName" class="input-field" placeholder="اكتب الاسم هنا...">
     </div>
     
-    <video id="video" autoplay playsinline></video>
-    <button class="btn" id="snapBtn">إلتقاط الصورة وحفظها بالاسم</button>
+    <div class="camera-container">
+      <video id="video" autoplay playsinline></video>
+      <!-- طبقة علوية شفافة لرسم مربع التحديد الأخضر فوق وجه المستخدم -->
+      <canvas id="overlay" class="overlay"></canvas>
+    </div>
     
-    <canvas id="canvas" style="display:none;"></canvas>
-    <div id="status">جاري تشغيل الكاميرا...</div>
+    <button class="btn" id="snapBtn" disabled>في انتظار اكتشاف وجه حقيقي...</button>
+    <canvas id="hiddenCanvas" style="display:none;"></canvas>
+    <div id="status">جاري تحميل محرك الذكاء الاصطناعي...</div>
 
     <div class="result-box" id="resultBox">
       <h3>اللقطة الحالية المرفوعة:</h3>
-      <img id="resultImage" src="" alt="بصمة الوجه الملتقطة">
+      <img id="resultImage" src="" alt="بصمة الوجه">
     </div>
   </div>
 
@@ -45,52 +56,119 @@
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwm6Qs1D3vXJbvmzDM3-7z_kQnUvYvbQIh-oZ6ZIt6KwFeWzskt8EveSeAU2tnMY3meuw/exec"; 
 
     const video = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
+    const overlay = document.getElementById('overlay');
+    const hiddenCanvas = document.getElementById('hiddenCanvas');
     const snapBtn = document.getElementById('snapBtn');
     const statusDiv = document.getElementById('status');
     const resultBox = document.getElementById('resultBox');
     const resultImage = document.getElementById('resultImage');
     const userNameInput = document.getElementById('userName');
+    
     let streamInstance = null;
+    let faceDetectionInterval = null;
 
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
-      .then(stream => {
-        streamInstance = stream;
-        video.srcObject = stream;
-        statusDiv.innerHTML = "الكاميرا تعمل بنجاح. اكتب الاسم ثم اضغط التقاط.";
-      })
-      .catch(err => {
-        statusDiv.innerHTML = "خطأ في تشغيل الكاميرا: " + err.message;
-      });
+    // 1. تحميل نماذج الذكاء الاصطناعي للتعرف على الوجوه وتشغيل الكاميرا فوراً
+    window.addEventListener('DOMContentLoaded', async () => {
+      try {
+        statusDiv.innerHTML = "جاري تهيئة نماذج الذكاء الاصطناعي...";
+        // تحميل نموذج تحديد معالم الوجوه السريع خفيف الحجم TinyFaceDetector
+        await faceapi.nets.tinyFaceDetector.loadFromUri('https://jsdelivr.net');
+        
+        statusDiv.innerHTML = "جاري تشغيل الكاميرا المباشرة...";
+        streamInstance = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: 400, height: 300 } });
+        video.srcObject = streamInstance;
+        
+        statusDiv.innerHTML = "اكتب اسمك واضبط وجهك أمام الكاميرا للتحقق...";
+        statusDiv.style.color = "#333";
+        
+        // بدء المسح التلقائي للبث الحي للتعرف على الوجوه
+        video.addEventListener('play', startFaceDetection);
+      } catch (err) {
+        statusDiv.innerHTML = "خطأ في التهيئة: " + err.message;
+        statusDiv.style.color = "red";
+      }
+    });
 
+    // 2. دالة المسح الحي واكتشاف الوجوه ورسم المربع الأخضر
+    function startFaceDetection() {
+      const displaySize = { width: video.offsetWidth, height: video.offsetHeight };
+      faceapi.matchDimensions(overlay, displaySize);
+
+      faceDetectionInterval = setInterval(async () => {
+        if (video.paused || video.ended) return;
+
+        // إجراء فحص سريع لوجود وجه حقيقي
+        const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 128, scoreThreshold: 0.5 }));
+        
+        // تنظيف الرسم السابق على الطبقة الشفافة
+        const context = overlay.getContext('2d');
+        context.clearRect(0, 0, overlay.width, overlay.height);
+
+        // تعديل أبعاد المربع المكتشف لتطابق حجم العرض الحالي
+        const resizedDetections = faceapi.resizeResults(detections, displaySize);
+        
+        if (resizedDetections.length > 0) {
+          // في حال تم اكتشاف وجه بشري واحد أو أكثر
+          statusDiv.innerHTML = "✅ تم رصد وجه بشري حقيقي! يمكنك التقاط البصمة.";
+          statusDiv.style.color = "green";
+          
+          // تفعيل زر الالتقاط وتغيير شكله برمجياً
+          snapBtn.disabled = false;
+          snapBtn.classList.add('active');
+          snapBtn.innerHTML = "إلتقاط وحفظ بصمة الوجه";
+
+          // رسم مربع التحديد الأخضر المخصص حول وجه المستخدم في البث الحي
+          resizedDetections.forEach(detection => {
+            const box = detection.box;
+            context.strokeStyle = '#28a745'; // اللون الأخضر
+            context.lineWidth = 4;
+            context.strokeRect(box.x, box.y, box.width, box.height);
+          });
+        } else {
+          // في حال كانت الكاميرا فارغة أو لا يوجد وجه واضح
+          statusDiv.innerHTML = "❌ تنبيه: لم يتم اكتشاف وجه. يرجى التموضع جيداً أمام الكاميرا.";
+          statusDiv.style.color = "#cc3300";
+          
+          // تجميد قفل زر الالتقاط تماماً لمنع الحفظ
+          snapBtn.disabled = true;
+          snapBtn.classList.remove('active');
+          snapBtn.innerHTML = "في انتظار اكتشاف وجه حقيقي...";
+        }
+      }, 200); // الفحص يتكرر كل 200 مللي ثانية تلقائياً لضمان المتابعة الحية
+    }
+
+    // 3. التقاط وحفظ الصورة المعتمدة باسم المستخدم
     snapBtn.addEventListener('click', () => {
-      if (!streamInstance) return;
-      
-      // التحقق من أن المستخدم كتب الاسم لمنع رفع صور مجهولة
       const nameValue = userNameInput.value.trim();
       if (!nameValue) {
-        alert("يرجى كتابة الاسم الكامل أولاً قبل التقاط الصورة!");
+        alert("يرجى كتابة الاسم الكامل للمستخدم أولاً قبل التقاط الصورة!");
         userNameInput.focus();
         return;
       }
       
-      statusDiv.innerHTML = "جاري معالجة اللقطة...";
-      const context = canvas.getContext('2d');
+      // إيقاف دالة المسح الحي لمنع تكرار الرسم
+      clearInterval(faceDetectionInterval);
       
-      canvas.width = 400;
-      canvas.height = 300;
+      statusDiv.innerHTML = "جاري التقاط لقطة الوجه الآمنة...";
+      const context = hiddenCanvas.getContext('2d');
       
-      context.translate(canvas.width, 0);
+      hiddenCanvas.width = 400;
+      hiddenCanvas.height = 300;
+      
+      // تطبيق مرآة للحفاظ على الاتجاه الطبيعي للصورة الشخصية
+      context.translate(hiddenCanvas.width, 0);
       context.scale(-1, 1);
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      context.drawImage(video, 0, 0, hiddenCanvas.width, hiddenCanvas.height);
       
-      const dataUrl = canvas.toDataURL('image/png');
+      const dataUrl = hiddenCanvas.toDataURL('image/png');
       resultImage.src = dataUrl;
       resultBox.style.display = "block";
+      overlay.style.display = "none"; // إخفاء طبقة الرسم بعد الحفظ
       
-      statusDiv.innerHTML = "جاري رفع اللقطة وتسميتها باسم: (" + nameValue + ")...";
+      statusDiv.innerHTML = "جاري رفع اللقطة وتخزينها باسم: (" + nameValue + ")...";
+      statusDiv.style.color = "#0066cc";
 
-      // نرسل مصفوفة JSON تحتوى على الصورة والاسم معاً
+      // بث البيانات النهائية إلى سيرفر جوجل درايف
       fetch(APPS_SCRIPT_URL, {
         method: "POST",
         mode: "no-cors", 
@@ -100,7 +178,7 @@
         })
       })
       .then(() => {
-        statusDiv.innerHTML = "🎉 تمت العملية بنجاح! تم حفظ الصورة باسم المستخدم داخل المجلد المخصص بالـ Drive.";
+        statusDiv.innerHTML = "🎉 تمت العملية بنجاح! تم التحقق من الوجه وحفظ الصورة المعتمدة بالاسم في الـ Drive.";
         statusDiv.style.color = "green";
         if (streamInstance) {
           streamInstance.getTracks().forEach(track => track.stop());
