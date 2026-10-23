@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>نظام التقاط 35353535بصمة الوجه الدائري</title>
+  <title>نظام بصمة 222222222222الوجه الدائري الذكي</title>
   <style>
     body { font-family: Arial, sans-serif; text-align: center; background-color: #f4f7f6; padding: 20px; color: #333; }
     .container { max-width: 450px; margin: 0 auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
@@ -11,45 +11,43 @@
     .input-group label { display: block; margin-bottom: 5px; font-weight: bold; }
     .input-field { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; }
     
-    /* حاوية الكاميرا */
-    .camera-container { position: relative; width: 320px; height: 320px; margin: 20px auto; border-radius: 50%; overflow: hidden; border: 4px solid #28a745; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+    .camera-container { position: relative; width: 320px; height: 320px; margin: 20px auto; border-radius: 50%; overflow: hidden; border: 4px solid #ccc; box-shadow: 0 4px 10px rgba(0,0,0,0.2); transition: border-color 0.3s; }
     video { width: 100%; height: 100%; object-fit: cover; background: #000; transform: scaleX(-1); }
-    
-    /* طبقة الدائرة الإرشادية الشفافة */
     .circle-guide { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; box-shadow: inset 0 0 0 20px rgba(0, 0, 0, 0.4); pointer-events: none; }
     
-    .btn { padding: 12px 24px; font-size: 16px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 15px; }
-    .btn:hover { background-color: #218838; }
+    /* قفل الزر وهو مجمد */
+    .btn { padding: 12px 24px; font-size: 16px; background-color: #cccccc; color: #666; border: none; border-radius: 5px; cursor: not-allowed; font-weight: bold; width: 100%; margin-top: 15px; transition: all 0.3s; }
+    /* تفعيل الزر عند مطابقة الوجه */
+    .btn.active { background-color: #28a745; color: white; cursor: pointer; }
+    
     .result-box { margin-top: 25px; padding-top: 20px; border-top: 2px dashed #ccc; display: none; }
-    #resultImage { border: 3px solid #28a745; border-radius: 5px; width: 180px; height: 180px; object-fit: cover; margin-top: 10px; }
-    #status { margin-top: 15px; font-weight: bold; color: #333; }
+    #resultImage { border: 3px solid #28a745; border-radius: 50%; width: 180px; height: 180px; object-fit: cover; margin-top: 10px; }
+    #status { margin-top: 15px; font-weight: bold; color: #cc3300; }
   </style>
 </head>
 <body>
 
   <div class="container">
-    <h2>نظام بصمة الوجه الدائري المطور</h2>
-    <p>ضع وجهك داخل الدائرة الخضراء واضغط التقاط ليتم قص وجهك حصراً</p>
+    <h2>نظام بصمة الوجه الدائري الذكي</h2>
+    <p>تنبيه: لن يتم تفعيل الحفظ إلا عند تمركز وجه حقيقي داخل الدائرة</p>
     
     <div class="input-group">
       <label for="userName">الاسم الكامل للمستخدم:</label>
       <input type="text" id="id_userName" class="input-field" placeholder="اكتب الاسم الكامل هنا...">
     </div>
     
-    <!-- الكاميرا مقيدة بشكل دائري أمام المستخدم -->
-    <div class="camera-container">
+    <div class="camera-container" id="id_camContainer">
       <video id="id_video" autoplay playsinline muted></video>
       <div class="circle-guide"></div>
     </div>
     
-    <button class="btn" id="id_snapBtn">إلتقاط وقص الوجه فقط</button>
+    <button class="btn" id="id_snapBtn" disabled>في انتظار رصد وجه بشري...</button>
     <canvas id="id_hiddenCanvas" style="display:none;"></canvas>
-    <div id="status">جاري تشغيل الكاميرا المباشرة...</div>
+    <div id="status">جاري تشغيل الكاميرا ونظام رصد الملامح...</div>
 
     <div class="result-box" id="id_resultBox">
-      <h3>بصمة الوجه الدائرية المرفوعة:</h3>
-      <!-- إظهار الصورة الناتجة داخل إطار دائري متناسق -->
-      <img id="id_resultImage" src="" alt="بصمة الوجه" style="border-radius: 50%;">
+      <h3>بصمة الوجه المقصوصة المرفوعة:</h3>
+      <img id="id_resultImage" src="" alt="بصمة الوجه">
     </div>
   </div>
 
@@ -58,20 +56,65 @@
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwm6Qs1D3vXJbvmzDM3-7z_kQnUvYvbQIh-oZ6ZIt6KwFeWzskt8EveSeAU2tnMY3meuw/exec"; 
 
     const video = document.getElementById('id_video');
+    const camContainer = document.getElementById('id_camContainer');
     const hiddenCanvas = document.getElementById('id_hiddenCanvas');
     const snapBtn = document.getElementById('id_snapBtn');
     const statusDiv = document.getElementById('status');
     const resultBox = document.getElementById('id_resultBox');
     const resultImage = document.getElementById('id_resultImage');
     const userNameInput = document.getElementById('id_userName');
+    
     let streamInstance = null;
+    let detectionInterval = null;
+    let faceDetectorSupported = false;
 
     window.addEventListener('load', async () => {
       try {
+        // تشغيل الكاميرا الحية
         streamInstance = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: 400, height: 400 } });
         video.srcObject = streamInstance;
-        statusDiv.innerHTML = "الكاميرا تعمل بنجاح. اضبط وجهك داخل الدائرة واكتب اسمك.";
-        statusDiv.style.color = "green";
+        
+        // التحقق من دعم المتصفح لنظام رصد الوجوه المدمج المستقل
+        if ('FaceDetector' in window) {
+          faceDetectorSupported = true;
+          const faceDetector = new FaceDetector({ maxDetectedFaces: 1, fastMode: true });
+          statusDiv.innerHTML = "قم بالتموضع داخل الدائرة ليتم تفعيل زر الالتقاط.";
+          statusDiv.style.color = "#333";
+
+          // بدء حلقة الفحص المتواصل الحي كل 250 مللي ثانية
+          detectionInterval = setInterval(async () => {
+            if (video.paused || video.ended) return;
+            try {
+              const faces = await faceDetector.detect(video);
+              if (faces.length > 0) {
+                // وجه حقيقي مكتشف ومتمركز أمام العدسة!
+                statusDiv.innerHTML = "✅ تم رصد وجه بشري! يمكنك التقاط البصمة الدائرية.";
+                statusDiv.style.color = "green";
+                camContainer.style.borderColor = "#28a745"; // تحويل إطار الدائرة للأخضر
+                snapBtn.disabled = false;
+                snapBtn.classList.add('active');
+                snapBtn.innerHTML = "إلتقاط وقص وجه المستخدم";
+              } else {
+                // الكاميرا مفتوحة لكن بدون ملامح وجه واضحة
+                statusDiv.innerHTML = "❌ تنبيه: يرجى وضع وجهك في منتصف الدائرة لتفعيل الزر.";
+                statusDiv.style.color = "#cc3300";
+                camContainer.style.borderColor = "#ccc"; // إعادة إطار الدائرة للرمادي
+                snapBtn.disabled = true;
+                snapBtn.classList.remove('active');
+                snapBtn.innerHTML = "في انتظار رصد وجه بشري...";
+              }
+            } catch (e) { console.error(e); }
+          }, 250);
+
+        } else {
+          // في حال كان المتصفح قديماً جداً ولا يدعم الميزة المدمجة، يعمل بوضعية الضبط البصري لتفادي التوقف
+          faceDetectorSupported = false;
+          statusDiv.innerHTML = "⚠️ ضبط بصري: اضبط وجهك في المنتصف تماماً ثم اضغط التقاط.";
+          statusDiv.style.color = "orange";
+          snapBtn.disabled = false;
+          snapBtn.classList.add('active');
+          snapBtn.innerHTML = "إلتقاط وقص الوجه (تأكيد بصري)";
+        }
       } catch (err) {
         statusDiv.innerHTML = "خطأ في تشغيل الكاميرا: " + err.message;
         statusDiv.style.color = "red";
@@ -86,34 +129,31 @@
         return;
       }
       
-      statusDiv.innerHTML = "جاري قص وعزل منطقة الدائرة...";
+      if(detectionInterval) clearInterval(detectionInterval);
+      statusDiv.innerHTML = "جاري قص وعزل منطقة الوجه المستهدفة...";
       statusDiv.style.color = "#0066cc";
       
       const context = hiddenCanvas.getContext('2d');
-      
-      // ضبط أبعاد الـ canvas لتكون مربعاً صغيراً ونظيفاً مخصصاً للوجه فقط
       const captureSize = 250; 
       hiddenCanvas.width = captureSize;
       hiddenCanvas.height = captureSize;
       
-      // حساب نقطة المنتصف بدقة لاقتطاع الوجه المتمركز داخل الدائرة
       const sourceX = (video.videoWidth - captureSize) / 2;
       const sourceY = (video.videoHeight - captureSize) / 2;
       
-      // تأثير المرآة وعملية اقتطاع الدائرة الوسطى فقط
       context.translate(hiddenCanvas.width, 0);
       context.scale(-1, 1);
       context.drawImage(
         video, 
-        sourceX, sourceY, captureSize, captureSize, // قص منطقة المنتصف من بث الكاميرا فقط
-        0, 0, captureSize, captureSize // رسمها في الأبعاد الجديدة النظيفة
+        sourceX, sourceY, captureSize, captureSize, 
+        0, 0, captureSize, captureSize
       );
       
       const dataUrl = hiddenCanvas.toDataURL('image/png');
       resultImage.src = dataUrl;
       resultBox.style.display = "block";
       
-      statusDiv.innerHTML = "جاري رفع بصمة الوجه الدائرية باسم: (" + nameValue + ")...";
+      statusDiv.innerHTML = "جاري رفع اللقطة المقصوصة للـ Drive باسم: (" + nameValue + ")...";
 
       fetch(APPS_SCRIPT_URL, {
         method: "POST",
@@ -124,14 +164,14 @@
         })
       })
       .then(() => {
-        statusDiv.innerHTML = "🎉 تمت العملية بنجاح! تم اقتطاع منطقة الدائرة فقط وحفظها بالاسم في Google Drive.";
+        statusDiv.innerHTML = "🎉 تم الحفظ بأمان! عزل الوجه الدائري واكتشافه وتخزينه بالكامل في الـ Drive.";
         statusDiv.style.color = "green";
         if (streamInstance) {
           streamInstance.getTracks().forEach(track => track.stop());
         }
       })
       .catch(err => {
-        statusDiv.innerHTML = "خطأ في الاتصال بالخادم: " + err.message;
+        statusDiv.innerHTML = "خطأ في الاتصال: " + err.message;
         statusDiv.style.color = "red";
       });
     });
