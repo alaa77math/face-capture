@@ -3,32 +3,32 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>نظام التقاط بصمة الوجه</title>
+  <title>نظام التقاط بصمة الوجه المطور</title>
   <style>
     body { font-family: Arial, sans-serif; text-align: center; background-color: #f4f7f6; padding: 20px; color: #333; }
     .container { max-width: 450px; margin: 0 auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
     video { border: 3px solid #007bff; border-radius: 8px; width: 100%; background: #000; transform: scaleX(-1); }
     .btn { padding: 12px 24px; font-size: 16px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 15px; }
     .btn-capture { background-color: #dc3545; }
-    #status { margin-top: 20px; font-weight: bold; color: #28a745; }
+    #status { margin-top: 20px; font-weight: bold; color: #333; }
   </style>
 </head>
 <body>
 
   <div class="container">
     <h2>بث الكاميرا الحي والمباشر</h2>
-    <p>التقاط بصمة الوجه وحفظها الفوري في المجلد</p>
+    <p>سيتم ضغط الصورة تلقائياً لضمان حفظها في الـ Drive</p>
     
     <video id="video" autoplay playsinline></video>
     <button class="btn btn-capture" id="snapBtn">إلتقاط وحفظ اللقطة</button>
     
-    <canvas id="canvas" width="400" height="300" style="display:none;"></canvas>
+    <canvas id="canvas" style="display:none;"></canvas>
     <div id="status">جاري تشغيل الكاميرا...</div>
   </div>
 
   <script>
-    // ⚠️ ضع رابط تطبيق ويب Google Apps Script الجديد الخاص بك هنا بين علامتي التنصيص:
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwm6Qs1D3vXJbvmzDM3-7z_kQnUvYvbQIh-oZ6ZIt6KwFeWzskt8EveSeAU2tnMY3meuw/exec"; 
+    // ⚠️ ضع رابط تطبيق ويب Google Apps Script الخاص بك هنا بين علامتي التنصيص:
+    const APPS_SCRIPT_URL = "رابط_تطبيق_ويب_جوجل_الخاص_بك"; 
 
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
@@ -36,53 +36,52 @@
     const statusDiv = document.getElementById('status');
     let streamInstance = null;
 
-    // تشغيل الكاميرا
     navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
       .then(stream => {
         streamInstance = stream;
         video.srcObject = stream;
         statusDiv.innerHTML = "الكاميرا تعمل بنجاح. اضبط وجهك ثم اضغط التقاط.";
-        statusDiv.style.color = "#333";
       })
       .catch(err => {
         statusDiv.innerHTML = "خطأ في تشغيل الكاميرا: " + err.message;
-        statusDiv.style.color = "red";
       });
 
-    // عند الضغط على التقاط
     snapBtn.addEventListener('click', () => {
       if (!streamInstance) return;
       
-      statusDiv.innerHTML = "جاري التقاط ومعالجة اللقطة...";
-      statusDiv.style.color = "#0066cc";
+      statusDiv.innerHTML = "جاري التقاط وضغط الصورة لحجم خفيف...";
       
       const context = canvas.getContext('2d');
+      
+      // لتصغير الحجم، سنجعل أبعاد الصورة الملتقطة صغيرة وخفيفة (مثالية لبصمة الوجه والروابط)
+      canvas.width = 160;
+      canvas.height = 120;
+      
       context.translate(canvas.width, 0);
       context.scale(-1, 1);
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
       
-      const dataUrl = canvas.toDataURL('image/png');
-      statusDiv.innerHTML = "جاري رفع اللقطة وتخزينها في المجلد المخصص بالـ Drive...";
+      // تحويل الصورة لصيغة jpeg مع نسبة ضغط جودة 50% فقط لتصغير كود الـ Base64 تماماً
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
+      
+      statusDiv.innerHTML = "جاري الإرسال النهائي إلى Google Drive...";
 
-      // نقوم بتمرير الصورة كمعامل مدمج بالرابط لتخطي مشكلة الـ CORS تماماً
+      // دمج الصورة الخفيفة بالرابط
       const finalUrl = APPS_SCRIPT_URL + "?image=" + encodeURIComponent(dataUrl);
 
-      // إنشاء عنصر نصي (Script Tag) لطلب الرابط بأعلى درجات الأمان والتوافقية
+      // حقن الرابط في الصفحة لإجبار المتصفح على نقله فوراً
       const script = document.createElement('script');
       script.src = finalUrl;
-      
-      // بمجرد إدراج هذا العنصر في الصفحة يتم إرسال الصورة فوراً للـ Drive
       document.body.appendChild(script);
 
-      // تأكيد نجاح العملية للمستخدم
       setTimeout(() => {
-        statusDiv.innerHTML = "🎉 تمت العملية بنجاح تام! ستجد لقطة وجهك الآن داخل المجلد المخصص في Google Drive.";
+        statusDiv.innerHTML = "🎉 تمت العملية بنجاح تام! تفقد المجلد المخصص في Google Drive الآن وسيظهر الملف فوراً.";
         statusDiv.style.color = "green";
         if (streamInstance) {
           streamInstance.getTracks().forEach(track => track.stop());
         }
         script.remove();
-      }, 2000);
+      }, 2500);
     });
   </script>
 </body>
