@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>نظام بصمة الوجه بالذكاء الاصطناعي</title>
   <!-- استدعاء مكتبة face-api.js للتعرف على الوجوه من خادم سحابي سريع -->
-  <script defer src="https://jsdelivr.net"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
   <style>
     body { font-family: Arial, sans-serif; text-align: center; background-color: #f4f7f6; padding: 20px; color: #333; }
     .container { max-width: 450px; margin: 0 auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
@@ -68,7 +68,7 @@
     let faceDetectionInterval = null;
 
     // 1. تحميل نماذج الذكاء الاصطناعي للتعرف على الوجوه وتشغيل الكاميرا فوراً
-    window.addEventListener('DOMContentLoaded', async () => {
+    window.addEventListener('load', async () => {
       try {
         statusDiv.innerHTML = "جاري تهيئة نماذج الذكاء الاصطناعي...";
         // تحميل نموذج تحديد معالم الوجوه السريع خفيف الحجم TinyFaceDetector
