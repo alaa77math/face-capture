@@ -3,23 +3,41 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>نظام اختبار بث البيانات</title>
+  <title>نظام التقاط وبث بصمة الوجه</title>
   <style>
     body { font-family: Arial, sans-serif; text-align: center; background-color: #f4f7f6; padding: 20px; color: #333; }
     .container { max-width: 450px; margin: 0 auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-    video { border: 3px solid #007bff; border-radius: 8px; width: 100%; background: #000; transform: scaleX(-1); }
+    .input-group { margin-bottom: 15px; text-align: right; }
+    .input-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+    .input-field { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; }
+    video { border: 3px solid #007bff; border-radius: 8px; width: 100%; background: #000; transform: scaleX(-1); margin-top: 10px; }
     .btn { padding: 12px 24px; font-size: 16px; background-color: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 15px; }
-    #status { margin-top: 20px; font-weight: bold; color: #0066cc; }
+    .result-box { margin-top: 25px; padding-top: 20px; border-top: 2px dashed #ccc; display: none; }
+    #resultImage { border: 3px solid #28a745; border-radius: 8px; width: 100%; max-width: 320px; margin-top: 10px; }
+    #status { margin-top: 15px; font-weight: bold; color: #0066cc; }
   </style>
 </head>
 <body>
 
   <div class="container">
-    <h2>اختبار إرسال البيانات للسيرفر</h2>
+    <h2>نظام التقاط بصمة الوجه الذكي</h2>
+    
+    <!-- حقل إدخال الاسم المضاف الجديد -->
+    <div class="input-group">
+      <label for="userName">الاسم الكامل للمستخدم:</label>
+      <input type="text" id="userName" class="input-field" placeholder="اكتب الاسم هنا قبل الالتقاط...">
+    </div>
+    
     <video id="video" autoplay playsinline></video>
-    <button class="btn" id="snapBtn">إلتقاط وإرسال بيانات الاختبار</button>
+    <button class="btn" id="snapBtn">إلتقاط الصورة وحفظها بالاسم</button>
+    
     <canvas id="canvas" style="display:none;"></canvas>
     <div id="status">جاري تشغيل الكاميرا...</div>
+
+    <div class="result-box" id="resultBox">
+      <h3>اللقطة الحالية المرفوعة:</h3>
+      <img id="resultImage" src="" alt="بصمة الوجه الملتقطة">
+    </div>
   </div>
 
   <script>
@@ -30,13 +48,16 @@
     const canvas = document.getElementById('canvas');
     const snapBtn = document.getElementById('snapBtn');
     const statusDiv = document.getElementById('status');
+    const resultBox = document.getElementById('resultBox');
+    const resultImage = document.getElementById('resultImage');
+    const userNameInput = document.getElementById('userName');
     let streamInstance = null;
 
     navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
       .then(stream => {
         streamInstance = stream;
         video.srcObject = stream;
-        statusDiv.innerHTML = "الكاميرا تعمل بنجاح. اضغط على الزر لإرسال اللقطة كبيانات خام.";
+        statusDiv.innerHTML = "الكاميرا تعمل بنجاح. اكتب الاسم ثم اضغط التقاط.";
       })
       .catch(err => {
         statusDiv.innerHTML = "خطأ في تشغيل الكاميرا: " + err.message;
@@ -45,27 +66,41 @@
     snapBtn.addEventListener('click', () => {
       if (!streamInstance) return;
       
-      statusDiv.innerHTML = "جاري التقاط ومعالجة اللقطة...";
+      // التحقق من أن المستخدم كتب الاسم لمنع رفع صور مجهولة
+      const nameValue = userNameInput.value.trim();
+      if (!nameValue) {
+        alert("يرجى كتابة الاسم الكامل أولاً قبل التقاط الصورة!");
+        userNameInput.focus();
+        return;
+      }
+      
+      statusDiv.innerHTML = "جاري معالجة اللقطة...";
       const context = canvas.getContext('2d');
-      canvas.width = 320;
-      canvas.height = 240;
+      
+      canvas.width = 400;
+      canvas.height = 300;
       
       context.translate(canvas.width, 0);
       context.scale(-1, 1);
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
       
       const dataUrl = canvas.toDataURL('image/png');
-      statusDiv.innerHTML = "جاري بث النص الخام المشفر إلى السيرفر...";
+      resultImage.src = dataUrl;
+      resultBox.style.display = "block";
+      
+      statusDiv.innerHTML = "جاري رفع اللقطة وتسميتها باسم: (" + nameValue + ")...";
 
-      // الإرسال كـ JSON نصي مباشر في جسم الطلب (Body) لتخطي حظر الحقول التلقائية
+      // نرسل مصفوفة JSON تحتوى على الصورة والاسم معاً
       fetch(APPS_SCRIPT_URL, {
         method: "POST",
         mode: "no-cors", 
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageFile: dataUrl })
+        body: JSON.stringify({
+          imageFile: dataUrl,
+          name: nameValue
+        })
       })
       .then(() => {
-        statusDiv.innerHTML = "🎉 أرسل المتصفح الطلب بنجاح! تفقد مجلدك الآن لرؤية الملف النصي المنشأ.";
+        statusDiv.innerHTML = "🎉 تمت العملية بنجاح! تم حفظ الصورة باسم المستخدم داخل المجلد المخصص بالـ Drive.";
         statusDiv.style.color = "green";
         if (streamInstance) {
           streamInstance.getTracks().forEach(track => track.stop());
