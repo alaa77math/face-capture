@@ -3,39 +3,48 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>نظام التقاط بصمة الوجه المطور</title>
+  <title>اختبار التقاط الصورة محلياً</title>
   <style>
     body { font-family: Arial, sans-serif; text-align: center; background-color: #f4f7f6; padding: 20px; color: #333; }
     .container { max-width: 450px; margin: 0 auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
     video { border: 3px solid #007bff; border-radius: 8px; width: 100%; background: #000; transform: scaleX(-1); }
-    .btn { padding: 12px 24px; font-size: 16px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 15px; }
-    .btn-capture { background-color: #dc3545; }
-    #status { margin-top: 20px; font-weight: bold; color: #333; }
+    .btn { padding: 12px 24px; font-size: 16px; background-color: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 15px; }
+    .result-box { margin-top: 25px; padding-top: 20px; border-top: 2px dashed #ccc; display: none; }
+    /* تنسيق كائن الصورة المستهدفة */
+    #resultImage { border: 3px solid #28a745; border-radius: 8px; width: 100%; max-width: 320px; margin-top: 10px; }
+    #status { margin-top: 15px; font-weight: bold; color: #333; }
   </style>
 </head>
 <body>
 
   <div class="container">
-    <h2>بث الكاميرا 8الحي والمباشر</h2>
-    <p>سيتم ضغط الصورة تلقائياً لضمان حفظها في الـ Drive</p>
+    <h2>بث الكاميرا الحي (اختبار محلي12)</h2>
+    <p>عند الضغط على الزر، سيتم وضع اللقطة داخل كائن صورة أدناه مباشرة دون رفع</p>
     
+    <!-- عنصر البث المباشر -->
     <video id="video" autoplay playsinline></video>
-    <button class="btn btn-capture" id="snapBtn">إلتقاط وحفظ اللقطة</button>
+    <button class="btn" id="snapBtn">إلتقاط الصورة وعرضها</button>
     
     <canvas id="canvas" style="display:none;"></canvas>
     <div id="status">جاري تشغيل الكاميرا...</div>
+
+    <!-- قسم النتيجة ويحتوي على كائن الصورة المستهدف -->
+    <div class="result-box" id="resultBox">
+      <h3>الصورة الملتقطة داخل كائن الصورة (img):</h3>
+      <img id="resultImage" src="" alt="بصمة الوجه الملتقطة">
+    </div>
   </div>
 
   <script>
-    // ⚠️ ضع رابط تطبيق ويب Google Apps Script الخاص بك هنا بين علامتي التنصيص:
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwm6Qs1D3vXJbvmzDM3-7z_kQnUvYvbQIh-oZ6ZIt6KwFeWzskt8EveSeAU2tnMY3meuw/exec"; 
-
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
     const snapBtn = document.getElementById('snapBtn');
     const statusDiv = document.getElementById('status');
+    const resultBox = document.getElementById('resultBox');
+    const resultImage = document.getElementById('resultImage'); // كائن الصورة
     let streamInstance = null;
 
+    // طلب تشغيل الكاميرا المباشرة
     navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
       .then(stream => {
         streamInstance = stream;
@@ -46,42 +55,37 @@
         statusDiv.innerHTML = "خطأ في تشغيل الكاميرا: " + err.message;
       });
 
+    // عند الضغط على زر الالتقاط
     snapBtn.addEventListener('click', () => {
       if (!streamInstance) return;
       
-      statusDiv.innerHTML = "جاري التقاط وضغط الصورة لحجم خفيف...";
+      statusDiv.innerHTML = "تم التقاط الصورة بنجاح وعرضها بالأسفل!";
+      statusDiv.style.color = "green";
       
       const context = canvas.getContext('2d');
       
-      // لتصغير الحجم، سنجعل أبعاد الصورة الملتقطة صغيرة وخفيفة (مثالية لبصمة الوجه والروابط)
-      canvas.width = 160;
-      canvas.height = 120;
+      // تحديد أبعاد واقعية وواضحة للاختبار
+      canvas.width = 400;
+      canvas.height = 300;
       
+      // تطبيق تأثير المرآة
       context.translate(canvas.width, 0);
       context.scale(-1, 1);
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
       
-      // تحويل الصورة لصيغة jpeg مع نسبة ضغط جودة 50% فقط لتصغير كود الـ Base64 تماماً
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
+      // تحويل لقطة الكاميرا الحية إلى صيغة الصورة Base64
+      const dataUrl = canvas.toDataURL('image/png');
       
-      statusDiv.innerHTML = "جاري الإرسال النهائي إلى Google Drive...";
-
-      // دمج الصورة الخفيفة بالرابط
-      const finalUrl = APPS_SCRIPT_URL + "?image=" + encodeURIComponent(dataUrl);
-
-      // حقن الرابط في الصفحة لإجبار المتصفح على نقله فوراً
-      const script = document.createElement('script');
-      script.src = finalUrl;
-      document.body.appendChild(script);
-
-      setTimeout(() => {
-        statusDiv.innerHTML = "🎉 تمت العملية بنجاح تام! تفقد المجلد المخصص في Google Drive الآن وسيظهر الملف فوراً.";
-        statusDiv.style.color = "green";
-        if (streamInstance) {
-          streamInstance.getTracks().forEach(track => track.stop());
-        }
-        script.remove();
-      }, 2500);
+      // 💡 السحر هنا: وضع الصورة الملتقطة داخل كائن الـ img (src) مباشرة
+      resultImage.src = dataUrl;
+      
+      // إظهار صندوق النتيجة للمستخدم
+      resultBox.style.display = "block";
+      
+      // إيقاف الكاميرا لتوفير الموارد
+      if (streamInstance) {
+        streamInstance.getTracks().forEach(track => track.stop());
+      }
     });
   </script>
 </body>
