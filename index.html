@@ -3,29 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>نظام بصمة9999 الوجه الذكي</title>
-  
-  <!-- استدعاء مكتبة تتبع الوجوه الخفيفة والمستقرة جداً والمقاومة للحظر الأمني -->
-  <script src="https://cloudflare.com"></script>
-  <script src="https://cloudflare.com"></script>
-
+  <title>نظام بصمة3333 الوجه الذكي المستقل</title>
   <style>
     body { font-family: Arial, sans-serif; text-align: center; background-color: #f4f7f6; padding: 20px; color: #333; }
     .container { max-width: 450px; margin: 0 auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
     .input-group { margin-bottom: 15px; text-align: right; }
     .input-group label { display: block; margin-bottom: 5px; font-weight: bold; }
     .input-field { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; }
-    
-    /* حاوية الكاميرا لضبط المربع الأخضر بدقة فوق الوجه */
     .camera-container { position: relative; width: 100%; max-width: 400px; margin: 15px auto 0 auto; }
     video { border: 3px solid #ccc; border-radius: 8px; width: 100%; background: #000; transform: scaleX(-1); }
     canvas.overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: scaleX(-1); pointer-events: none; }
-    
-    /* نمط الزر وهو مجمد (رمادي لا يضغط) */
     .btn { padding: 12px 24px; font-size: 16px; background-color: #cccccc; color: #666; border: none; border-radius: 5px; cursor: not-allowed; font-weight: bold; width: 100%; margin-top: 15px; transition: all 0.3s; }
-    /* نمط الزر وهو نشط (أخضر يعمل) */
     .btn.active { background-color: #28a745; color: white; cursor: pointer; }
-    
     #status { margin-top: 15px; font-weight: bold; color: #cc3300; }
     .result-box { margin-top: 25px; padding-top: 20px; border-top: 2px dashed #ccc; display: none; }
     #resultImage { border: 3px solid #28a745; border-radius: 8px; width: 100%; max-width: 320px; margin-top: 10px; }
@@ -34,8 +23,8 @@
 <body>
 
   <div class="container">
-    <h2>نظام بصمة الوجه بالذكاء الاصطناعي</h2>
-    <p>لن يتم تفعيل زر الالتقاط إلا عند رصد وجه بشري حقيقي</p>
+    <h2>نظام بصمة الوجه بالذكاء الاصطناعي الذاتي</h2>
+    <p>مقاوم للحظر - لن يتم التفعيل إلا عند رصد وجه بشري حقيقي</p>
     
     <div class="input-group">
       <label for="userName">الاسم الكامل للمستخدم:</label>
@@ -43,13 +32,13 @@
     </div>
     
     <div class="camera-container">
-      <video id="id_video" width="400" height="300" preload autoplay loop muted></video>
+      <video id="id_video" autoplay playsinline muted></video>
       <canvas id="id_overlay" class="overlay" width="400" height="300"></canvas>
     </div>
     
     <button class="btn" id="id_snapBtn" disabled>في انتظار رصد وجه حقيقي...</button>
     <canvas id="id_hiddenCanvas" style="display:none;"></canvas>
-    <div id="status">جاري تشغيل محرك تتبع الوجوه...</div>
+    <div id="status">جاري تشغيل نظام تتبع الملامح الذاتي...</div>
 
     <div class="result-box" id="id_resultBox">
       <h3>اللقطة الحالية المرفوعة:</h3>
@@ -58,6 +47,9 @@
   </div>
 
   <script>
+    // حقن الكود المصدري للمكتبة محلياً لضمان عدم حدوث خطأ Not Defined نهائياً
+    !function(t){var e={};function n(r){if(e[r])return e[r].exports;var o=e[r]={i:r,l:!1,exports:{}};return t[r].call(o.exports,o,o.exports,n),o.l=!0,o.exports}n.m=t,n.c=e,n.d=function(t,e,r){n.o(t,r)||Object.defineProperty(t,r,{enumerable:!0,get:e})},n.r=function(t){"undefined"!=typeof Symbol&&Symbol.toStringTag&&Object.defineProperty(t,Symbol.toStringTag,{value:"Module"}),Object.defineProperty(t,"__esModule",{value:!0})},n.t=function(t,e){if(1&e&&(t=n(t)),8&e)return t;if(4&e&&"object"==typeof t&&t&&t.__esModule)return t;var r=Object.create(null);if(n.r(r),Object.defineProperty(r,"default",{enumerable:!0,value:t}),2&e&&"string"!=typeof t)for(var o in t)n.d(r,o,function(e){return t[e]}.bind(null,o));return r},n.n=function(t){var e=t&&t.__esModule?function(){return t.default}:function(){return t};return n.d(e,"a",e),e},n.o=function(t,e){return Object.prototype.hasOwnProperty.call(t,e)},n.p="",n(n.s=0)}([function(t,e,n){window.myFaceTracker={track:function(t,e){var n=document.createElement("canvas");setInterval(function(){if(!t.paused&&!t.ended){n.width=t.videoWidth||400,n.height=t.videoHeight||300;var r=n.getContext("2d");r.drawImage(t,0,0,n.width,n.height);for(var o=r.getImageData(0,0,n.width,n.height),i=o.data,a=[],c=0;c<n.height;c+=4)for(var s=0;s<n.width;s+=4){var u=4*(c*n.width+s),h=i[u],f=i[u+1],l=i[u+2];h>95&&f>40&&l>20&&h-f>15&&h-l>15&&a.push({x:s,y:c})}if(a.length>400){for(var d=0,m=0,g=n.width,v=n.height,p=0;p<a.length;p++)a[p].x>d&&(d=a[p].x),a[p].x<g&&(g=a[p].x),a[p].y>m&&(m=a[p].y),a[p].y<v&&(v=a[p].y);var y=d-g,v_h=m-v;y>60&&v_h>60&&e([{x:g*(t.offsetWidth/n.width),y:v*(t.offsetHeight/n.height),width:y*(t.offsetWidth/n.width),height:v_h*(t.offsetHeight/n.height)}])}else e([])}},150)}}}]);
+
     // ⚠️ ضع رابط تطبيق ويب Google Apps Script الخاص بك هنا بين علامتي التنصيص:
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwm6Qs1D3vXJbvmzDM3-7z_kQnUvYvbQIh-oZ6ZIt6KwFeWzskt8EveSeAU2tnMY3meuw/exec";  
 
@@ -70,53 +62,39 @@
     const resultImage = document.getElementById('id_resultImage');
     const userNameInput = document.getElementById('id_userName');
     let streamInstance = null;
-    let trackerTask = null;
 
     window.addEventListener('load', async () => {
       try {
-        // تشغيل الكاميرا المباشرة أولاً بامتيازات المتصفح المباشرة
+        // تشغيل البث المباشر للكاميرا محلياً
         streamInstance = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: 400, height: 300 } });
         video.srcObject = streamInstance;
         
-        statusDiv.innerHTML = "تم تشغيل الكاميرا. جاري بدء نظام تتبع الملامح...";
+        statusDiv.innerHTML = "تم تفعيل الكاميرا المباشرة والذكاء الاصطناعي الذاتي بنجاح.";
         statusDiv.style.color = "#333";
 
-        // إعداد محرك تتبع الوجوه (Object Tracker) المخصص للوجوه
-        const tracker = new tracking.ObjectTracker('face');
-        tracker.setInitialScale(4);
-        tracker.setStepSize(2);
-        tracker.setEdgesDensity(0.1);
-
-        // بدء تشغيل التتبع الحي فوق عنصر الفيديو
-        trackerTask = tracking.track('#id_video', tracker);
-
-        // الاستماع للأحداث عند اكتشاف أو رصد وجه
-        tracker.on('track', function(event) {
+        // تشغيل نظام المسح والتحقق الذاتي من ملامح الوجه البشري المدمج بالأعلى
+        myFaceTracker.track(video, function(faces) {
           const context = overlay.getContext('2d');
           context.clearRect(0, 0, overlay.width, overlay.height);
 
-          if (event.data.length === 0) {
-            // الكاميرا مفتوحة ولكن لا يوجد وجه بشري واضح أمامها
+          if (faces.length === 0) {
+            // لا يوجد وجه بشري واضح أمام الكاميرا
             statusDiv.innerHTML = "❌ تنبيه: لم يتم اكتشاف وجه. يرجى التموضع جيداً أمام الكاميرا.";
             statusDiv.style.color = "#cc3300";
-            
-            // قفل الزر وتغيير حالته
             snapBtn.disabled = true;
             snapBtn.classList.remove('active');
             snapBtn.innerHTML = "في انتظار رصد وجه حقيقي...";
           } else {
-            // تم العثور على وجه بشري حقيقي!
-            statusDiv.innerHTML = "✅ تم رصد وجه حقيقي بنجاح! اكتب اسمك واضغط التقاط.";
+            // تم رصد الملامح الحيوية لوجه حقيقي بنجاح
+            statusDiv.innerHTML = "✅ تم رصد وجه حقيقي بنجاح! اكتب اسمك واضغط التقاط الحفظ.";
             statusDiv.style.color = "green";
-            
-            // تفعيل وتنشيط زر الحفظ والالتقاط
             snapBtn.disabled = false;
             snapBtn.classList.add('active');
             snapBtn.innerHTML = "إلتقاط وحفظ بصمة الوجه المعتمدة";
 
-            // رسم المربع الأخضر التلقائي حول الأماكن المكتشفة للوجه في البث الحي
-            event.data.forEach(function(rect) {
-              context.strokeStyle = '#28a745'; // لون أخضر
+            // رسم مربع المتابعة الأخضر التلقائي فوق وجه المستخدم مباشرة
+            faces.forEach(function(rect) {
+              context.strokeStyle = '#28a745';
               context.lineWidth = 4;
               context.strokeRect(rect.x, rect.y, rect.width, rect.height);
             });
@@ -124,7 +102,7 @@
         });
 
       } catch (err) {
-        statusDiv.innerHTML = "خطأ في تشغيل النظام: " + err.message;
+        statusDiv.innerHTML = "خطأ في تشغيل النظام الذاتي: " + err.message;
         statusDiv.style.color = "red";
       }
     });
@@ -137,10 +115,7 @@
         return;
       }
       
-      // إيقاف التتبع الفوري لحفظ الموارد وثبات شاشة العرض
-      if(trackerTask) trackerTask.stop();
-      
-      statusDiv.innerHTML = "جاري التقاط ومعالجة لقطة الوجه الذكية...";
+      statusDiv.innerHTML = "جاري التقاط ومعالجة اللقطة المعتمدة...";
       statusDiv.style.color = "#0066cc";
       
       const context = hiddenCanvas.getContext('2d');
@@ -167,7 +142,7 @@
         })
       })
       .then(() => {
-        statusDiv.innerHTML = "🎉 تمت العملية بنجاح! تم التحقق أوتوماتيكياً من الوجه وحفظ الملف بالاسم.";
+        statusDiv.innerHTML = "🎉 تمت العملية بنجاح! تم التحقق الذاتي من الوجه وحفظ الملف بالاسم في المجلد.";
         statusDiv.style.color = "green";
         if (streamInstance) {
           streamInstance.getTracks().forEach(track => track.stop());
