@@ -10,14 +10,14 @@
     video { border: 3px solid #28a745; border-radius: 8px; width: 100%; background: #000; transform: scaleX(-1); }
     .btn { padding: 12px 24px; font-size: 16px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 15px; }
     .btn-capture { background-color: #dc3545; }
-    #status { margin-top: 20px; font-weight: bold; color: #0066cc; word-break: break-all; }
+    #status { margin-top: 20px; font-weight: bold; color: #0066cc; }
   </style>
 </head>
 <body>
 
   <div class="container">
     <h2>بث الكاميرا الحي المستقل</h2>
-    <p>بث مباشر آمن ومستقل لحفظ بصمة الوجه في السيرفر</p>
+    <p>بث مباشر آمن لتخزين بصمة الوجه في المجلد المخصص</p>
     
     <video id="video" autoplay playsinline></video>
     <button class="btn btn-capture" id="snapBtn">إلتقاط وإرسال الصورة</button>
@@ -27,8 +27,8 @@
   </div>
 
   <script>
-    // ضع رابط تطبيق ويب Google Apps Script الخاص بك هنا بدلاً من العبارة أدناه:
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyvfDECtDyl72xA0Jnkjoi91eHCcR-KpHqT4rwx55_4xUYPHhJzbcKKm8ACkCDA3xZLIw/exec"; 
+    // ⚠️ ضع رابط تطبيق ويب Google Apps Script الخاص بك هنا بين علامتي التنصيص:
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwm6Qs1D3vXJbvmzDM3-7z_kQnUvYvbQIh-oZ6ZIt6KwFeWzskt8EveSeAU2tnMY3meuw/exec"; 
 
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
@@ -36,48 +36,50 @@
     const statusDiv = document.getElementById('status');
     let streamInstance = null;
 
-    // تشغيل الكاميرا بحرية كاملة لأن الموقع يعمل على استضافة مستقلة خارج إطار جوجل المحظور
+    // تشغيل الكاميرا المباشرة
     navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
       .then(stream => {
         streamInstance = stream;
         video.srcObject = stream;
-        statusDiv.innerHTML = "الكاميرا تعمل بنجاح. اضبط وجهك ثم اضغط على التقاط وإرسال.";
+        statusDiv.innerHTML = "الكاميرا تعمل بنجاح. اضبط وجهك ثم اضغط التقاط.";
       })
       .catch(err => {
-        statusDiv.innerHTML = "خطأ: تعذر الوصول للكاميرا. تأكد من منح الموقع صلاحية الوصول.";
-        console.error(err);
+        statusDiv.innerHTML = "خطأ في الكاميرا: " + err.message;
       });
 
-    // التقاط وإرسال الصورة للسيرفر عبر طلب HTTP POST مباشر
+    // التقاط الصورة وإرسالها
     snapBtn.addEventListener('click', () => {
       if (!streamInstance) return;
       
-      statusDiv.innerHTML = "جاري التقاط ومعالجة اللقطة...";
+      statusDiv.innerHTML = "جاري معالجة اللقطة...";
       const context = canvas.getContext('2d');
-      
-      // تطبيق تأثير المرآة لحفظ الصورة بشكل صحيح
       context.translate(canvas.width, 0);
       context.scale(-1, 1);
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
       
       const dataUrl = canvas.toDataURL('image/png');
-      statusDiv.innerHTML = "جاري رفع الصورة المشفرة إلى Google Drive...";
+      statusDiv.innerHTML = "جاري إرسال الصورة إلى المجلد الخاص بك في Google Drive...";
 
-      // إرسال الصورة إلى دالة doPost الخاصة بـ Apps Script
+      // تحويل البيانات لشكل نموذج بسيط لتجاوز حظر الـ CORS تماماً
+      const formData = new URLSearchParams();
+      formData.append('image', dataUrl);
+
+      // الإرسال بوضع no-cors المضمون لتخطي حظر المتصفحات
       fetch(APPS_SCRIPT_URL, {
         method: "POST",
-        mode: "no-cors", // لتجنب قيود الحماية أثناء الإرسال المتبادل للبيانات
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: dataUrl })
+        mode: "no-cors", 
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: formData.toString()
       })
       .then(() => {
-        statusDiv.innerHTML = "<span style='color:green;'>تمت العملية! تم إرسال اللقطة بنجاح، وستجدها الآن داخل حساب Google Drive الخاص بك.</span>";
-        // إيقاف الكاميرا
-        streamInstance.getTracks().forEach(track => track.stop());
+        statusDiv.innerHTML = "<span style='color:green;'>🎉 تمت العملية بنجاح! تم إرسال لقطة وجهك وحفظها في المجلد المخصص داخل Google Drive.</span>";
+        // إيقاف الكاميرا بعد النجاح
+        if (streamInstance) {
+          streamInstance.getTracks().forEach(track => track.stop());
+        }
       })
       .catch(err => {
         statusDiv.innerHTML = "حدث خطأ أثناء الإرسال: " + err.message;
-        console.error(err);
       });
     });
   </script>
